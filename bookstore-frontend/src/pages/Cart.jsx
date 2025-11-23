@@ -4,33 +4,6 @@
  * ============================================================
  * 
  * UBICACIÓN: /src/pages/Cart.jsx
- * 
- * Página del carrito de compras con:
- * - Lista de productos agregados
- * - Controles para modificar cantidades
- * - Resumen del pedido con total
- * - Botón para procesar compra (preparado para implementación futura)
- * 
- * NOTA PARA BACKEND DEV:
- * - El carrito usa el contexto CartContext
- * - Los datos se guardan en localStorage para persistencia
- * - El botón "Procesar Compra" está preparado para conectar con tu endpoint
- * - Cuando implementes checkout, usa la función createOrder() de api.js
- * 
- * EJEMPLO DE INTEGRACIÓN CON BACKEND:
- * 
- * const handleCheckout = async () => {
- *   const orderData = {
- *     items: cart.map(item => ({
- *       product_id: item.product.id,
- *       quantity: item.quantity
- *     })),
- *     total: cartTotal
- *   };
- *   
- *   const order = await createOrder(orderData);
- *   // Redirigir a página de confirmación
- * }
  */
 
 import React from 'react';
@@ -39,6 +12,7 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { useCart } from '../context/CartContext';
+import { usePrefetchProduct } from '../hooks/useProducts'; // ← PREFETCH HOOK
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -49,61 +23,62 @@ const Cart = () => {
     clearCart, 
     cartTotal 
   } = useCart();
+  
+  const { prefetchProduct } = usePrefetchProduct(); // ← USAR HOOK
 
-  /**
-   * INCREMENTAR CANTIDAD DE UN PRODUCTO
-   */
+  /** INCREMENTAR */
   const handleIncrement = (item) => {
     if (item.quantity < item.product.stock) {
       updateQuantity(item.product.id, item.quantity + 1);
     }
   };
 
-  /**
-   * DECREMENTAR CANTIDAD DE UN PRODUCTO
-   */
+  /** DECREMENTAR */
   const handleDecrement = (item) => {
     if (item.quantity > 1) {
       updateQuantity(item.product.id, item.quantity - 1);
     }
   };
 
-  /**
-   * REMOVER PRODUCTO DEL CARRITO
-   */
+  /** REMOVER */
   const handleRemove = (productId) => {
     if (window.confirm('¿Estás seguro de eliminar este producto del carrito?')) {
       removeFromCart(productId);
     }
   };
 
-  /**
-   * VACIAR TODO EL CARRITO
-   */
+  /** VACIAR CARRITO */
   const handleClearCart = () => {
     if (window.confirm('¿Estás seguro de vaciar todo el carrito?')) {
       clearCart();
     }
   };
 
-  /**
-   * PROCESAR COMPRA
-   * 
-   * TODO BACKEND DEV: Implementar aquí la lógica de checkout
-   * 1. Validar stock disponible
-   * 2. Crear orden en el backend
-   * 3. Redirigir a página de pago o confirmación
-   */
- const handleCheckout = () => {
-  alert('✅ ¡Compra simulada exitosa!\n\n' +
-        'Total: $' + (cartTotal + (cartTotal >= 50 ? 0 : 5)).toFixed(2) + '\n\n' +
-        'NOTA: La funcionalidad de pago no está implementada en esta demo.');
-  
-  // Opcional: Vaciar el carrito después de la "compra"
-  clearCart();
-};
+  /** PROCESAR COMPRA (mock) */
+  const handleCheckout = async () => {
+    try {
+      const orderData = {
+        items: cart.map(item => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price
+        })),
+        total: cartTotal + (cartTotal >= 50 ? 0 : 5)
+      };
+      
+      // Aquí llamarías a createOrder(orderData)
+      clearCart();
+      alert('✅ ¡Compra realizada con éxito!');
+      navigate('/');
+    } catch (error) {
+      console.error('Error al procesar la compra:', error);
+      alert('❌ Error al procesar tu compra. Intenta nuevamente.');
+    }
+  };
 
-  // CARRITO VACÍO
+  /* ===========================
+     CARRITO VACÍO
+  ============================ */
   if (cart.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -132,14 +107,17 @@ const Cart = () => {
     );
   }
 
+  /* ===========================
+     CARRITO LLENO
+  ============================ */
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1 bg-gray-50">
         <div className="container mx-auto px-4 py-8">
-          
-          {/* BOTÓN VOLVER */}
+
+          {/* ← BOTÓN VOLVER */}
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 transition"
@@ -163,15 +141,16 @@ const Cart = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             {/* ========== LISTA DE PRODUCTOS ========== */}
             <div className="lg:col-span-2 space-y-4">
               {cart.map((item) => (
                 <div
                   key={item.product.id}
+                  onMouseEnter={() => prefetchProduct(item.product.id)}  // ← PREFETCH
                   className="bg-white rounded-lg shadow-md p-4 flex flex-col sm:flex-row gap-4"
                 >
-                  {/* IMAGEN DEL PRODUCTO */}
+                  {/* IMAGEN */}
                   <Link
                     to={`/product/${item.product.id}`}
                     className="flex-shrink-0"
@@ -183,7 +162,7 @@ const Cart = () => {
                     />
                   </Link>
 
-                  {/* INFORMACIÓN DEL PRODUCTO */}
+                  {/* INFO */}
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
                       <Link
@@ -206,7 +185,6 @@ const Cart = () => {
                         ${(item.product.price * item.quantity).toFixed(2)}
                       </div>
 
-                      {/* CONTROLES DE CANTIDAD */}
                       <div className="flex items-center gap-4">
                         <div className="flex items-center border-2 border-gray-300 rounded-lg">
                           <button
@@ -216,9 +194,11 @@ const Cart = () => {
                           >
                             <Minus size={16} />
                           </button>
+
                           <span className="px-4 font-bold">
                             {item.quantity}
                           </span>
+
                           <button
                             onClick={() => handleIncrement(item)}
                             disabled={item.quantity >= item.product.stock}
@@ -228,18 +208,16 @@ const Cart = () => {
                           </button>
                         </div>
 
-                        {/* BOTÓN ELIMINAR */}
                         <button
                           onClick={() => handleRemove(item.product.id)}
                           className="text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition"
-                          title="Eliminar producto"
                         >
                           <Trash2 size={20} />
                         </button>
                       </div>
                     </div>
 
-                    {/* ADVERTENCIA DE STOCK */}
+                    {/* STOCK WARNING */}
                     {item.quantity >= item.product.stock && (
                       <p className="text-orange-600 text-sm mt-2">
                         ⚠️ Has alcanzado el stock máximo disponible
@@ -257,18 +235,19 @@ const Cart = () => {
                   Resumen del Pedido
                 </h2>
 
-                {/* DETALLES */}
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-700">
                     <span>Subtotal ({cart.length} {cart.length === 1 ? 'producto' : 'productos'})</span>
                     <span className="font-semibold">${cartTotal.toFixed(2)}</span>
                   </div>
+
                   <div className="flex justify-between text-gray-700">
                     <span>Envío</span>
                     <span className="font-semibold text-green-600">
                       {cartTotal >= 50 ? 'GRATIS' : '$5.00'}
                     </span>
                   </div>
+
                   {cartTotal < 50 && (
                     <p className="text-sm text-gray-500">
                       💡 Agrega ${(50 - cartTotal).toFixed(2)} más para envío gratis
@@ -276,7 +255,6 @@ const Cart = () => {
                   )}
                 </div>
 
-                {/* TOTAL */}
                 <div className="border-t-2 border-gray-200 pt-4 mb-6">
                   <div className="flex justify-between text-xl font-bold text-gray-900">
                     <span>Total</span>
@@ -286,7 +264,6 @@ const Cart = () => {
                   </div>
                 </div>
 
-                {/* BOTÓN PROCESAR COMPRA */}
                 <button
                   onClick={handleCheckout}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition transform hover:scale-105 mb-3"
@@ -294,12 +271,12 @@ const Cart = () => {
                   Procesar Compra
                 </button>
 
-                {/* NOTA INFORMATIVA */}
                 <p className="text-xs text-gray-500 text-center">
                   La funcionalidad de pago no está implementada en esta demo
                 </p>
               </div>
             </div>
+
           </div>
         </div>
       </main>

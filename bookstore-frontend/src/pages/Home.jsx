@@ -22,22 +22,32 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Header from '../components/layout/Header';
 import { useSearchParams } from 'react-router-dom';
+import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductCard from '../components/products/ProductCard';
-import { fetchAllProducts, fetchAllCategories } from '../services/api';
+
+// IMPORTAR HOOKS DE REACT QUERY
+import { useProducts, usePrefetchProduct } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 
 const Home = () => {
-  // ESTADOS
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  // REACT QUERY HOOKS
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { prefetchProduct } = usePrefetchProduct();
+
+  // ESTADOS LOCALES
   const [selectedCategory, setSelectedCategory] = useState('todas');
-  const [loading, setLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search');
-  const categoryParam = searchParams.get('category');  
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const categoryParam = searchParams.get('category');
+
+  // El loading general
+  const loading = productsLoading || categoriesLoading;
+
+  // Resto del código permanece igual...
 
   // SLIDES DEL HERO (carrusel)
   const heroSlides = [
@@ -64,32 +74,12 @@ const Home = () => {
    * TODO BACKEND DEV: Estas funciones ya están conectadas con api.js
    * Solo necesitas descomentar el código fetch en api.js cuando tu backend esté listo
    */
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        
-        // Cargar productos y categorías en paralelo
-        const [productsData, categoriesData] = await Promise.all([
-          fetchAllProducts(),
-          fetchAllCategories()
-        ]);
-
-        setProducts(productsData);
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-    if (categoryParam) {
+  // Actualizar categoría desde URL
+useEffect(() => {
+  if (categoryParam) {
     setSelectedCategory(categoryParam);
-    }
-  }, [categoryParam]);
-
+  }
+}, [categoryParam]);
   /**
    * CARRUSEL AUTOMÁTICO
    * Cambia de slide cada 5 segundos

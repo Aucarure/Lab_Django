@@ -1,33 +1,13 @@
-/**
- * ============================================================
- * FOOTER - PIE DE PÁGINA
- * ============================================================
- * 
- * UBICACIÓN: /src/components/layout/Footer.jsx
- * 
- * Componente del pie de página con:
- * - Información de la tienda
- * - Enlaces útiles funcionales
- * - Categorías con navegación
- * - Información de contacto del equipo
- * - Copyright actualizado a 2025
- * 
- * NOTA PARA BACKEND DEV:
- * - Los enlaces de categorías navegan al home con filtro
- * - Personalizado con nombres del equipo
- */
 
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Facebook, Instagram, Twitter, User } from 'lucide-react';
+import { usePrefetchCategory } from "../../hooks/useCategories";
+
 
 const Footer = () => {
   const navigate = useNavigate();
+  const { prefetchCategory } = usePrefetchCategory(); // ← USAR HOOK
 
-  /**
-   * NAVEGAR A CATEGORÍA ESPECÍFICA
-   * Navega al home y selecciona la categoría
-   */
   const handleCategoryClick = (categorySlug) => {
     navigate(`/?category=${categorySlug}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -77,54 +57,59 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* COLUMNA 3: CATEGORÍAS */}
+          {/* COLUMNA 3: CATEGORÍAS CON PREFETCH */}
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Categorías</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <button 
-                  onClick={() => handleCategoryClick('manga')}
+                  onClick={() => handleCategoryClick('manga-shonen')}
+                  onMouseEnter={() => prefetchCategory('manga-shonen')} // ← PREFETCH
                   className="hover:text-blue-400 transition text-left"
                 >
-                  Manga
+                  Manga Shōnen
                 </button>
               </li>
               <li>
                 <button 
-                  onClick={() => handleCategoryClick('novela-grafica')}
+                  onClick={() => handleCategoryClick('manga-shojo')}
+                  onMouseEnter={() => prefetchCategory('manga-shojo')} // ← PREFETCH
                   className="hover:text-blue-400 transition text-left"
                 >
-                  Novela Gráfica
+                  Manga Shōjo
                 </button>
               </li>
               <li>
                 <button 
-                  onClick={() => handleCategoryClick('fantasia')}
+                  onClick={() => handleCategoryClick('novelas-ligeras')}
+                  onMouseEnter={() => prefetchCategory('novelas-ligeras')} // ← PREFETCH
                   className="hover:text-blue-400 transition text-left"
                 >
-                  Fantasía
+                  Novelas Ligeras
                 </button>
               </li>
               <li>
                 <button 
-                  onClick={() => handleCategoryClick('ciencia-ficcion')}
+                  onClick={() => handleCategoryClick('libros-fantasia')}
+                  onMouseEnter={() => prefetchCategory('libros-fantasia')} // ← PREFETCH
                   className="hover:text-blue-400 transition text-left"
                 >
-                  Ciencia Ficción
+                  Libros de Fantasía
                 </button>
               </li>
               <li>
                 <button 
-                  onClick={() => handleCategoryClick('clasicos')}
+                  onClick={() => handleCategoryClick('comics-superheroes')}
+                  onMouseEnter={() => prefetchCategory('comics-superheroes')} // ← PREFETCH
                   className="hover:text-blue-400 transition text-left"
                 >
-                  Clásicos
+                  Comics Superhéroes
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* COLUMNA 4: CONTACTO Y EQUIPO */}
+          {/* COLUMNA 4: EQUIPO */}
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Equipo de Desarrollo</h4>
             <div className="space-y-3 mb-6">

@@ -1,36 +1,36 @@
 /**
  * ============================================================
- * PRODUCT CARD - TARJETA DE PRODUCTO
+ * PRODUCT CARD - TARJETA DE PRODUCTO CON PREFETCH
  * ============================================================
  * 
  * UBICACIÓN: /src/components/products/ProductCard.jsx
  * 
- * Componente reutilizable para mostrar un producto en formato tarjeta.
- * Se usa en la página Home y en listados de categorías.
- * 
- * PROPS:
- * @param {Object} product - Objeto del producto con toda su información
- * 
- * NOTA PARA BACKEND DEV:
- * - Este componente recibe el producto como prop
- * - El botón "Agregar al carrito" usa la función addToCart del contexto
- * - Al hacer click en la tarjeta, navega al detalle del producto
+ * Ahora incluye prefetch al pasar el mouse sobre la tarjeta
  */
 
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Eye } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { usePrefetchProduct } from '../../hooks/useProducts';
 
 const ProductCard = ({ product }) => {
   const { addToCart, isInCart } = useCart();
+  const { prefetchProduct } = usePrefetchProduct();
+
+  /**
+   * PREFETCH: Cargar datos del producto cuando el mouse pase por encima
+   * Esto hace que la navegación a DetalleProducto sea instantánea
+   */
+  const handleMouseEnter = () => {
+    prefetchProduct(product.id);
+  };
 
   /**
    * MANEJAR AGREGAR AL CARRITO
-   * Previene la navegación al detalle cuando se hace click en el botón
    */
   const handleAddToCart = (e) => {
-    e.preventDefault(); // Evita que el Link se active
+    e.preventDefault();
     e.stopPropagation();
     addToCart(product);
   };
@@ -38,6 +38,7 @@ const ProductCard = ({ product }) => {
   return (
     <Link 
       to={`/product/${product.id}`}
+      onMouseEnter={handleMouseEnter} // ← PREFETCH AL PASAR EL MOUSE
       className="group bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
     >
       {/* IMAGEN DEL PRODUCTO */}
@@ -55,7 +56,7 @@ const ProductCard = ({ product }) => {
           </span>
         </div>
 
-        {/* BADGE DE STOCK BAJO (opcional) */}
+        {/* BADGE DE STOCK BAJO */}
         {product.stock < 10 && product.stock > 0 && (
           <div className="absolute top-3 right-3">
             <span className="bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
