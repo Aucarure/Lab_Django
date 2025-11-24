@@ -7,13 +7,14 @@
  * 
  * Componente del encabezado con:
  * - Logo y nombre de la tienda
+ * - Enlace a Categorías
  * - Barra de búsqueda FUNCIONAL
  * - Icono del carrito con contador de items
  * 
  * NOTA PARA BACKEND DEV:
  * - El contador del carrito usa useCart() del contexto
  * - La búsqueda filtra productos por título o autor
- * - Se quitaron los enlaces "Inicio" y "Categorías"
+ * - El enlace de Categorías navega a /categories
  */
 
 import React, { useState } from 'react';
@@ -51,6 +52,14 @@ const Header = () => {
               <h1 className="text-2xl font-bold">BookStore</h1>
               <p className="text-xs text-gray-400">Tu librería online</p>
             </div>
+          </Link>
+
+          {/* ENLACE CATEGORÍAS */}
+          <Link 
+            to="/categories" 
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+          >
+            Categorías
           </Link>
 
           {/* BARRA DE BÚSQUEDA */}
