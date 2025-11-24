@@ -21,6 +21,15 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # ESTAS RUTAS FALLAN PORQUE NO EXISTEN LAS APPS
+    # path('api/usuarios/', include('usuarios.urls')),
+    # path('api/diccionario/', include('diccionario.urls')),
+    # path('api/ejercicios/', include('ejercicios.urls')),
+    # path('api/progreso/', include('progreso.urls')),
+    # path('api/reportes/', include('reportes.urls')),
+
+    # ESTA ES LA RUTA QUE SI EXISTE
     path('api/', include('products.urls')),
 ]
 

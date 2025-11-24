@@ -210,3 +210,8 @@ class CartViewSet(viewsets.ModelViewSet):
             'message': 'Carrito vaciado',
             'cart': serializer.data
         }, status=status.HTTP_200_OK)
+    
+from django.http import JsonResponse
+
+def lista_productos(request):
+    return JsonResponse({"mensaje": "funciona"})
