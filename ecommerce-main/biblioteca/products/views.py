@@ -1,11 +1,139 @@
-from rest_framework import viewsets, filters, status
-from rest_framework.decorators import action
+from rest_framework import viewsets, filters, status, generics
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Cart, CartItem, Product
-from .serializers import CategorySerializer, CategoryListSerializer, ProductSerializer, CartSerializer, CartItemSerializer
+from .models import Category, Cart, CartItem, Product, Order, OrderItem
+from .serializers import (
+    CategorySerializer, CategoryListSerializer, ProductSerializer, CartSerializer,
+    CartItemSerializer, RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer,
+    OrderSerializer, CreateOrderSerializer
+)
+
+# ===== AUTENTICACIÓN =====
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        return Response({
+            'user': UserSerializer(user).data,
+            'message': 'Usuario registrado exitosamente'
+        }, status=status.HTTP_201_CREATED)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    """Obtener información del usuario actual"""
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
+
+
+# ===== ÓRDENES =====
+
+class OrderViewSet(viewsets.ModelViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Solo mostrar las órdenes del usuario actual
+        return Order.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def create_order(self, request):
+        """Crear una orden desde el carrito actual"""
+        serializer = CreateOrderSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        
+        order_serializer = OrderSerializer(order)
+        return Response({
+            'message': 'Orden creada exitosamente',
+            'order': order_serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        """Obtener historial completo de compras del usuario"""
+        orders = self.get_queryset().order_by('-created_at')
+        
+        # Filtros opcionales
+        status_filter = request.query_params.get('status', None)
+        if status_filter:
+            orders = orders.filter(status=status_filter)
+        
+        # Paginación
+        page = self.paginate_queryset(orders)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(orders, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'])
+    def cancel(self, request, pk=None):
+        """Cancelar una orden (solo si está pendiente)"""
+        order = self.get_object()
+        
+        if order.status != 'pending':
+            return Response(
+                {'error': 'Solo se pueden cancelar órdenes pendientes'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.status = 'cancelled'
+        order.save()
+        
+        # Devolver stock
+        for item in order.items.all():
+            if item.product:
+                item.product.stock += item.quantity
+                item.product.save()
+        
+        serializer = self.get_serializer(order)
+        return Response({
+            'message': 'Orden cancelada exitosamente',
+            'order': serializer.data
+        })
+
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Estadísticas de compras del usuario"""
+        orders = self.get_queryset()
+        
+        stats = {
+            'total_orders': orders.count(),
+            'total_spent': sum(order.total for order in orders),
+            'orders_by_status': {
+                'pending': orders.filter(status='pending').count(),
+                'processing': orders.filter(status='processing').count(),
+                'shipped': orders.filter(status='shipped').count(),
+                'delivered': orders.filter(status='delivered').count(),
+                'cancelled': orders.filter(status='cancelled').count(),
+            },
+            'last_order': None
+        }
+        
+        last_order = orders.first()
+        if last_order:
+            stats['last_order'] = OrderSerializer(last_order).data
+        
+        return Response(stats)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
