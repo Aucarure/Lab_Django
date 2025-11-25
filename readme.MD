@@ -4,6 +4,7 @@
 - pip install python-decouple 
 - pip install django-cors-headers
 - pip install django-extensions
+- pip install djangorestframework-simplejwt
 - python manage.py makemigrations
 - python manage.py migrate
 - python manage.py populate_data
