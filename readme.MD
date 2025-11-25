@@ -3,6 +3,7 @@
 - pip install django djangorestframework django-filter
 - pip install python-decouple 
 - pip install django-cors-headers
+- pip install django-extensions
 - python manage.py makemigrations
 - python manage.py migrate
 - python manage.py populate_data
